@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Playable_Ad_Door</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    body, html {
+      width: 100%;
+      height: 100%;
+      background-color: #111;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+    }
+
+    /* Контейнер 9:16 */
+    #game-container {
+      position: relative;
+      width: 100vw;
+      height: 177.77vw;
+      max-height: 100vh;
+      max-width: 56.25vh;
+      background: #000;
+      overflow: hidden;
+      box-shadow: 0 0 20px rgba(0,0,0,0.8);
+    }
+
+    /* Фонове відео */
+    .bg-video {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      z-index: 1;
+    }
+
+    /* Затемнення */
+    .overlay-dark {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.25);
+      z-index: 2;
+    }
+
+    /* Двері */
+    #door-container {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 3;
+      transform: translateX(30%); /* Старт 3/4 */
+      touch-action: none;
+    }
+
+    .door-img {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 100%;
+      height: 100%;
+      background-image: url('assets/door.png');
+      background-size: cover;
+      background-position: center;
+      z-index: 1;
+    }
+
+    /* PNG Обводка дверей */
+    .door-stroke-img {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 100%;
+      height: 100%;
+      background-image: url('assets/door_stroke.png');
+      background-size: cover;
+      background-position: center;
+      z-index: 2;
+      opacity: 0;
+      transition: opacity 0.25s ease-in-out;
+      pointer-events: none;
+    }
+
+    .stroke-active {
+      opacity: 1;
+      animation: strokePulse 1s infinite alternate ease-in-out;
+    }
+
+    @keyframes strokePulse {
+      0% { opacity: 0.5; }
+      100% { opacity: 1; }
+    }
+
+    /* UI Шар */
+    .ui-layer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 5;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      pointer-events: none;
+    }
+
+    /* Сплеш сцена (Крок 1) */
+    #step-1-ui {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      pointer-events: auto;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+    }
+
+    .top-text-img {
+      width: 85%;
+      max-width: 320px;
+      height: auto;
+    }
+
+    .bottom-text-img {
+      width: 65%;
+      max-width: 240px;
+      height: auto;
+    }
+
+    .splash-arrow-img {
+      width: 50px;
+      height: 50px;
+      margin: 15px 0;
+      animation: bounceArrow 0.8s ease-in-out infinite alternate;
+    }
+
+    @keyframes bounceArrow {
+      0% { transform: translateY(-8px); }
+      100% { transform: translateY(8px); }
+    }
+
+    /* Ігрова сцена (Крок 2) */
+    .hint-container {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      position: absolute;
+      top: 25%;
+    }
+
+    .open-door-img {
+      width: 75%;
+      max-width: 280px;
+      height: auto;
+      transition: opacity 0.25s ease-in-out;
+    }
+
+    .hand-icon {
+      width: 60px;
+      height: 60px;
+      margin-top: 10px;
+      background-image: url('assets/hand.png');
+      background-size: contain;
+      background-repeat: no-repeat;
+      animation: handSwipe 1.5s infinite;
+      transition: opacity 0.25s ease-in-out;
+    }
+
+    @keyframes handSwipe {
+      0% { transform: translateX(0); opacity: 0.8; }
+      50% { transform: translateX(50px); opacity: 1; }
+      100% { transform: translateX(100px); opacity: 0; }
+    }
+
+    /* Клас для приховання інтерактивних підказок */
+    .fade-out {
+      opacity: 0 !important;
+      pointer-events: none;
+    }
+
+    /* Фінальний екран (Крок 3) */
+    #final-cta-container {
+      display: none;
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 6;
+      background: rgba(0, 0, 0, 0.35);
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      pointer-events: auto;
+    }
+
+    .cta-btn-img {
+      width: 75%;
+      max-width: 300px;
+      height: auto;
+      cursor: pointer;
+      animation: pulseCTA 0.9s infinite alternate;
+    }
+
+    @keyframes pulseCTA {
+      0% { transform: scale(0.95); }
+      100% { transform: scale(1.05); }
+    }
+
+    .hidden {
+      display: none !important;
+    }
+  </style>
+</head>
+<body>
+
+  <audio id="bg-music" src="assets/bg_music.mp3" loop></audio>
+  <audio id="door-sound" src="assets/door_open.mp3"></audio>
+
+  <div id="game-container">
+    <video id="bg-video" class="bg-video" loop playsinline preload="metadata">
+      <source src="assets/video.mp4#t=0.1" type="video/mp4">
+    </video>
+
+    <div class="overlay-dark"></div>
+
+    <div id="door-container">
+      <div id="door-img" class="door-img"></div>
+      <div id="door-stroke" class="door-stroke-img"></div>
+    </div>
+
+    <div class="ui-layer">
+      <div id="step-1-ui">
+        <img src="assets/top_text.png" alt="See What Others Don't" class="top-text-img">
+        <img src="assets/arrow.png" alt="Arrow" class="splash-arrow-img">
+        <img src="assets/tap_here.png" alt="Tap Here" class="bottom-text-img">
+      </div>
+
+      <div id="step-2-ui" class="hint-container">
+        <img id="open-door-text" src="assets/open_door_text.png" alt="Open The Door" class="open-door-img">
+        <div id="hand-icon" class="hand-icon"></div>
+      </div>
+    </div>
+
+    <div id="final-cta-container">
+      <img id="cta-btn" src="assets/cta_button.png" alt="Play Now" class="cta-btn-img">
+    </div>
+  </div>
+
+  <script>
+    const step1UI = document.getElementById('step-1-ui');
+    const step2UI = document.getElementById('step-2-ui');
+    const openDoorText = document.getElementById('open-door-text');
+    const handIcon = document.getElementById('hand-icon');
+    
+    const finalCTA = document.getElementById('final-cta-container');
+    const ctaBtn = document.getElementById('cta-btn');
+    
+    const doorContainer = document.getElementById('door-container');
+    const doorStroke = document.getElementById('door-stroke');
+    const gameContainer = document.getElementById('game-container');
+    const bgVideo = document.getElementById('bg-video');
+
+    const bgMusic = document.getElementById('bg-music');
+    const doorSound = document.getElementById('door-sound');
+
+    let currentStep = 1;
+    let isDragging = false;
+    let startX = 0;
+    let baseTranslatePercent = 30; // Старт 3/4
+    let currentDoorTranslatePercent = 30;
+    let containerWidth = gameContainer.clientWidth;
+
+    bgVideo.pause();
+
+    // Сплеш сцена
+    step1UI.addEventListener('click', () => {
+      if (currentStep !== 1) return;
+      currentStep = 2;
+
+      bgVideo.play().catch(() => {});
+      bgMusic.play().catch(() => {});
+
+      step1UI.classList.add('hidden');
+      step2UI.style.display = 'flex';
+
+      doorStroke.classList.add('stroke-active');
+      doorContainer.style.cursor = 'grab';
+
+      initDragEvents();
+    });
+
+    // Події перетягування
+    function initDragEvents() {
+      doorContainer.addEventListener('mousedown', startDrag);
+      window.addEventListener('mousemove', onDrag);
+      window.addEventListener('mouseup', stopDrag);
+
+      doorContainer.addEventListener('touchstart', startDrag, { passive: false });
+      window.addEventListener('touchmove', onDrag, { passive: false });
+      window.addEventListener('touchend', stopDrag);
+    }
+
+    function getClientX(e) {
+      return e.touches ? e.touches[0].clientX : e.clientX;
+    }
+
+    function startDrag(e) {
+      if (currentStep !== 2) return;
+      isDragging = true;
+      startX = getClientX(e);
+      containerWidth = gameContainer.clientWidth;
+      
+      // МОМЕНТ ВІДКРИВАННЯ: Приховуємо руку, обводку та надпис
+      doorStroke.classList.add('fade-out');
+      handIcon.classList.add('fade-out');
+      openDoorText.classList.add('fade-out');
+
+      doorSound.play().catch(() => {});
+    }
+
+    function onDrag(e) {
+      if (!isDragging || currentStep !== 2) return;
+      e.preventDefault();
+
+      const currentX = getClientX(e);
+      const deltaX = currentX - startX;
+      
+      let newPercent = baseTranslatePercent + (deltaX / containerWidth) * 100;
+
+      if (newPercent < baseTranslatePercent) newPercent = baseTranslatePercent;
+
+      currentDoorTranslatePercent = newPercent;
+      doorContainer.style.transform = `translateX(${newPercent}%)`;
+
+      // Якщо відсунули більше ніж на 85%
+      if (newPercent >= 85) {
+        completeDoorOpening();
+      }
+    }
+
+    function stopDrag() {
+      if (!isDragging) return;
+      isDragging = false;
+
+      if (currentStep === 2 && currentDoorTranslatePercent < 85) {
+        // Двері відкочуються назад, але залишаються трохи ближче до відкриття
+        let targetPercent = baseTranslatePercent + (currentDoorTranslatePercent - baseTranslatePercent) * 0.4;
+        baseTranslatePercent = Math.min(targetPercent, 75);
+
+        doorContainer.style.transition = 'transform 0.4s ease-out';
+        doorContainer.style.transform = `translateX(${baseTranslatePercent}%)`;
+        currentDoorTranslatePercent = baseTranslatePercent;
+
+        // ЗУПИНКА ВІДКРИВАННЯ: Показуємо РУКУ та ОБВОДКУ знову
+        setTimeout(() => {
+          doorContainer.style.transition = 'none';
+          doorStroke.classList.remove('fade-out');
+          handIcon.classList.remove('fade-out');
+          // openDoorText залишається прихованим для чистоти екрана
+        }, 400);
+      }
+    }
+
+    // Фінал
+    function completeDoorOpening() {
+      currentStep = 3;
+      isDragging = false;
+
+      doorContainer.style.transition = 'transform 0.3s ease-out';
+      doorContainer.style.transform = 'translateX(100%)';
+
+      doorStroke.classList.remove('stroke-active');
+      step2UI.classList.add('hidden');
+
+      bgVideo.pause();
+
+      setTimeout(() => {
+        finalCTA.style.display = 'flex';
+      }, 300);
+    }
+
+    ctaBtn.addEventListener('click', () => {
+      window.open('https://your-game-site.com', '_self');
+    });
+  </script>
+</body>
+</html>
