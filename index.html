@@ -191,13 +191,11 @@
       100% { transform: translateX(100px); opacity: 0; }
     }
 
-    /* Клас для приховання інтерактивних підказок */
     .fade-out {
       opacity: 0 !important;
       pointer-events: none;
     }
 
-    /* Фінальний екран (Крок 3) */
     #final-cta-container {
       display: none;
       position: absolute;
@@ -330,7 +328,6 @@
       startX = getClientX(e);
       containerWidth = gameContainer.clientWidth;
       
-      // МОМЕНТ ВІДКРИВАННЯ: Приховуємо руку, обводку та надпис
       doorStroke.classList.add('fade-out');
       handIcon.classList.add('fade-out');
       openDoorText.classList.add('fade-out');
@@ -352,8 +349,7 @@
       currentDoorTranslatePercent = newPercent;
       doorContainer.style.transform = `translateX(${newPercent}%)`;
 
-      // Якщо відсунули більше ніж на 85%
-      if (newPercent >= 85) {
+      if (newPercent >= 90) {
         completeDoorOpening();
       }
     }
@@ -362,8 +358,7 @@
       if (!isDragging) return;
       isDragging = false;
 
-      if (currentStep === 2 && currentDoorTranslatePercent < 85) {
-        // Двері відкочуються назад, але залишаються трохи ближче до відкриття
+      if (currentStep === 2 && currentDoorTranslatePercent < 90) {
         let targetPercent = baseTranslatePercent + (currentDoorTranslatePercent - baseTranslatePercent) * 0.4;
         baseTranslatePercent = Math.min(targetPercent, 75);
 
@@ -371,12 +366,10 @@
         doorContainer.style.transform = `translateX(${baseTranslatePercent}%)`;
         currentDoorTranslatePercent = baseTranslatePercent;
 
-        // ЗУПИНКА ВІДКРИВАННЯ: Показуємо РУКУ та ОБВОДКУ знову
         setTimeout(() => {
           doorContainer.style.transition = 'none';
           doorStroke.classList.remove('fade-out');
           handIcon.classList.remove('fade-out');
-          // openDoorText залишається прихованим для чистоти екрана
         }, 400);
       }
     }
