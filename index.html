@@ -122,7 +122,6 @@
       pointer-events: none;
     }
 
-    /* Сплеш сцена (Крок 1) */
     #step-1-ui {
       display: flex;
       flex-direction: column;
@@ -158,7 +157,6 @@
       100% { transform: translateY(8px); }
     }
 
-    /* Ігрова сцена (Крок 2) */
     .hint-container {
       display: none;
       flex-direction: column;
@@ -177,7 +175,7 @@
     .hand-icon {
       width: 60px;
       height: 60px;
-      margin-top: 10px;
+      margin-top: 50%;
       background-image: url('assets/hand.png');
       background-size: contain;
       background-repeat: no-repeat;
@@ -232,7 +230,7 @@
 <body>
 
   <audio id="bg-music" src="assets/bg_music.mp3" loop></audio>
-  <audio id="door-sound" src="assets/door_open.mp3"></audio>
+  <audio id="door-sound" src="assets/door_open.mp3" loop></audio>
 
   <div id="game-container">
     <video id="bg-video" class="bg-video" loop playsinline preload="metadata">
@@ -290,7 +288,11 @@
 
     bgVideo.pause();
 
-    // Сплеш сцена
+    function stopDoorSound() {
+      doorSound.pause();
+      doorSound.currentTime = 0;
+    }
+
     step1UI.addEventListener('click', () => {
       if (currentStep !== 1) return;
       currentStep = 2;
@@ -307,7 +309,6 @@
       initDragEvents();
     });
 
-    // Події перетягування
     function initDragEvents() {
       doorContainer.addEventListener('mousedown', startDrag);
       window.addEventListener('mousemove', onDrag);
@@ -358,6 +359,8 @@
       if (!isDragging) return;
       isDragging = false;
 
+      stopDoorSound();
+
       if (currentStep === 2 && currentDoorTranslatePercent < 90) {
         let targetPercent = baseTranslatePercent + (currentDoorTranslatePercent - baseTranslatePercent) * 0.4;
         baseTranslatePercent = Math.min(targetPercent, 75);
@@ -378,6 +381,8 @@
     function completeDoorOpening() {
       currentStep = 3;
       isDragging = false;
+
+      stopDoorSound();
 
       doorContainer.style.transition = 'transform 0.3s ease-out';
       doorContainer.style.transform = 'translateX(100%)';
