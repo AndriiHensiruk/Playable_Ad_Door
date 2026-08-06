@@ -278,7 +278,7 @@
 
     bgVideo.pause();
 
-    
+ 
     let audioCtx;
     let masterGain, bgMusicGain, doorSoundGain;
     let bgMusicBuffer, doorSoundBuffer;
@@ -289,7 +289,7 @@
       try {
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       } catch (e) {
-        return; 
+        return; // Web Audio недоступний — беззвучний фолбек
       }
 
       masterGain = audioCtx.createGain();
@@ -314,6 +314,7 @@
         .catch(() => null);
     }
 
+    // Викликати ТІЛЬКИ у відповідь на жест користувача (iOS вимагає це)
     function unlockAudio() {
       if (audioCtx && audioCtx.state === 'suspended') {
         audioCtx.resume().catch(() => {});
@@ -349,6 +350,46 @@
 
    
     initAudio();
+
+   
+    let audioUnlocked = false;
+
+    function playSilentBuffer() {
+      if (!audioCtx) return;
+      const buffer = audioCtx.createBuffer(1, 1, 22050);
+      const source = audioCtx.createBufferSource();
+      source.buffer = buffer;
+      source.connect(audioCtx.destination);
+      source.start(0);
+    }
+
+    function unlockOnFirstInteraction() {
+      if (audioUnlocked || !audioCtx) return;
+      audioUnlocked = true;
+
+      unlockAudio();
+      playSilentBuffer();
+
+      ['touchstart', 'touchend', 'pointerdown', 'mousedown', 'keydown'].forEach(evt => {
+        document.removeEventListener(evt, unlockOnFirstInteraction, true);
+      });
+    }
+
+    ['touchstart', 'touchend', 'pointerdown', 'mousedown', 'keydown'].forEach(evt => {
+      document.addEventListener(evt, unlockOnFirstInteraction, true);
+    });
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume().catch(() => {});
+      }
+    });
+
+    window.addEventListener('pageshow', () => {
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume().catch(() => {});
+      }
+    });
 
     step1UI.addEventListener('click', () => {
       if (currentStep !== 1) return;
