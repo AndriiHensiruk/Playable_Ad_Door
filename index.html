@@ -23,7 +23,6 @@
       overflow: hidden;
     }
 
-    /* Контейнер 9:16 */
     #game-container {
       position: relative;
       width: 100vw;
@@ -35,7 +34,6 @@
       box-shadow: 0 0 20px rgba(0,0,0,0.8);
     }
 
-    /* Фонове відео */
     .bg-video {
       position: absolute;
       top: 0;
@@ -46,7 +44,6 @@
       z-index: 1;
     }
 
-    /* Затемнення */
     .overlay-dark {
       position: absolute;
       top: 0;
@@ -65,7 +62,7 @@
       width: 100%;
       height: 100%;
       z-index: 3;
-      transform: translateX(30%); /* Старт 3/4 */
+      transform: translateX(30%); 
       touch-action: none;
     }
 
@@ -81,7 +78,6 @@
       z-index: 1;
     }
 
-    /* PNG Обводка дверей */
     .door-stroke-img {
       position: absolute;
       top: 0;
@@ -107,7 +103,6 @@
       100% { opacity: 1; }
     }
 
-    /* UI Шар */
     .ui-layer {
       position: absolute;
       top: 0;
@@ -390,7 +385,7 @@
       doorStroke.classList.remove('stroke-active');
       step2UI.classList.add('hidden');
 
-      bgVideo.pause();
+      //bgVideo.pause();
 
       setTimeout(() => {
         finalCTA.style.display = 'flex';
