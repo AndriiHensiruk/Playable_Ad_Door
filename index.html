@@ -230,6 +230,7 @@
   <div id="game-container">
     <video id="bg-video" class="bg-video" loop playsinline preload="metadata">
       <source src="assets/video.webm#t=0.1" type="video/webm">
+      <source src="assets/video.mp4#t=0.1" type="video/mp4">
     </video>
 
     <div class="overlay-dark"></div>
@@ -281,11 +282,25 @@
     let currentDoorTranslatePercent = 30;
     let containerWidth = gameContainer.clientWidth;
 
+    let doorSoundStarted = false; // чи вже реально запущений .play() для door-sound
+
     bgVideo.pause();
 
+    // ВАЖЛИВО для iOS/WKWebView: .pause() на одному audio-елементі може
+    // деактивувати спільну AVAudioSession і "заглушити" всі інші медіа
+    // на сторінці (в т.ч. bg-music), навіть якщо ви їх не чіпали.
+    // Тому door-sound НЕ ставимо на паузу — просто глушимо гучність,
+    // а сам елемент продовжує грати (loop) у фоні без звуку.
     function stopDoorSound() {
-      doorSound.pause();
-      doorSound.currentTime = 0;
+      doorSound.volume = 0;
+    }
+
+    function startDoorSound() {
+      doorSound.volume = 1;
+      if (!doorSoundStarted) {
+        doorSoundStarted = true;
+        doorSound.play().catch(() => {});
+      }
     }
 
     step1UI.addEventListener('click', () => {
@@ -328,7 +343,7 @@
       handIcon.classList.add('fade-out');
       openDoorText.classList.add('fade-out');
 
-      doorSound.play().catch(() => {});
+      startDoorSound();
     }
 
     function onDrag(e) {
