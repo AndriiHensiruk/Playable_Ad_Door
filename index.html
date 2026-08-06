@@ -224,6 +224,10 @@
 </head>
 <body>
 
+  <!-- HTML5 аудіо елементи -->
+  <audio id="bg-music" src="assets/bg_music.mp3" loop preload="auto"></audio>
+  <audio id="door-sound" src="assets/door_open.mp3" loop preload="auto"></audio>
+
   <div id="game-container">
     <video id="bg-video" class="bg-video" loop playsinline preload="metadata">
       <source src="assets/video.webm#t=0.1" type="video/webm">
@@ -269,6 +273,9 @@
     const gameContainer = document.getElementById('game-container');
     const bgVideo = document.getElementById('bg-video');
 
+    const bgMusic = document.getElementById('bg-music');
+    const doorSound = document.getElementById('door-sound');
+
     let currentStep = 1;
     let isDragging = false;
     let startX = 0;
@@ -278,126 +285,23 @@
 
     bgVideo.pause();
 
- 
-    let audioCtx;
-    let masterGain, bgMusicGain, doorSoundGain;
-    let bgMusicBuffer, doorSoundBuffer;
-    let bgMusicSource = null;
-    let doorSoundSource = null;
+    function warmUpAudio() {
+      doorSound.muted = false;
+      doorSound.play().then(() => {
+        doorSound.pause();
+        doorSound.currentTime = 0;
+      }).catch(() => {});
 
-    function initAudio() {
-      try {
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      } catch (e) {
-        return; // Web Audio недоступний — беззвучний фолбек
-      }
-
-      masterGain = audioCtx.createGain();
-      masterGain.connect(audioCtx.destination);
-
-      bgMusicGain = audioCtx.createGain();
-      bgMusicGain.gain.value = 1;
-      bgMusicGain.connect(masterGain);
-
-      doorSoundGain = audioCtx.createGain();
-      doorSoundGain.gain.value = 0;
-      doorSoundGain.connect(masterGain);
-
-      loadSound('assets/bg_music.mp3').then(buf => { bgMusicBuffer = buf; });
-      loadSound('assets/door_open.mp3').then(buf => { doorSoundBuffer = buf; });
+      bgMusic.muted = false;
+      bgMusic.play().catch(() => {});
     }
-
-    function loadSound(url) {
-      return fetch(url)
-        .then(res => res.arrayBuffer())
-        .then(data => audioCtx.decodeAudioData(data))
-        .catch(() => null);
-    }
-
-    // Викликати ТІЛЬКИ у відповідь на жест користувача (iOS вимагає це)
-    function unlockAudio() {
-      if (audioCtx && audioCtx.state === 'suspended') {
-        audioCtx.resume().catch(() => {});
-      }
-    }
-
-    function playBgMusic() {
-      if (!audioCtx || !bgMusicBuffer || bgMusicSource) return;
-      bgMusicSource = audioCtx.createBufferSource();
-      bgMusicSource.buffer = bgMusicBuffer;
-      bgMusicSource.loop = true;
-      bgMusicSource.connect(bgMusicGain);
-      bgMusicSource.start(0);
-    }
-
-    function startDoorSound() {
-      if (!audioCtx) return;
-      unlockAudio();
-      if (!doorSoundSource && doorSoundBuffer) {
-        doorSoundSource = audioCtx.createBufferSource();
-        doorSoundSource.buffer = doorSoundBuffer;
-        doorSoundSource.loop = true;
-        doorSoundSource.connect(doorSoundGain);
-        doorSoundSource.start(0);
-      }
-      doorSoundGain.gain.setTargetAtTime(1, audioCtx.currentTime, 0.01);
-    }
-
-    function stopDoorSound() {
-      if (!audioCtx) return;
-      doorSoundGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.03);
-    }
-
-   
-    initAudio();
-
-   
-    let audioUnlocked = false;
-
-    function playSilentBuffer() {
-      if (!audioCtx) return;
-      const buffer = audioCtx.createBuffer(1, 1, 22050);
-      const source = audioCtx.createBufferSource();
-      source.buffer = buffer;
-      source.connect(audioCtx.destination);
-      source.start(0);
-    }
-
-    function unlockOnFirstInteraction() {
-      if (audioUnlocked || !audioCtx) return;
-      audioUnlocked = true;
-
-      unlockAudio();
-      playSilentBuffer();
-
-      ['touchstart', 'touchend', 'pointerdown', 'mousedown', 'keydown'].forEach(evt => {
-        document.removeEventListener(evt, unlockOnFirstInteraction, true);
-      });
-    }
-
-    ['touchstart', 'touchend', 'pointerdown', 'mousedown', 'keydown'].forEach(evt => {
-      document.addEventListener(evt, unlockOnFirstInteraction, true);
-    });
-
-    document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible' && audioCtx && audioCtx.state === 'suspended') {
-        audioCtx.resume().catch(() => {});
-      }
-    });
-
-    window.addEventListener('pageshow', () => {
-      if (audioCtx && audioCtx.state === 'suspended') {
-        audioCtx.resume().catch(() => {});
-      }
-    });
 
     step1UI.addEventListener('click', () => {
       if (currentStep !== 1) return;
       currentStep = 2;
 
       bgVideo.play().catch(() => {});
-      unlockAudio();
-      playBgMusic();
+      warmUpAudio(); // Розігріваємо і запускаємо музику
 
       step1UI.classList.add('hidden');
       step2UI.style.display = 'flex';
@@ -432,7 +336,8 @@
       handIcon.classList.add('fade-out');
       openDoorText.classList.add('fade-out');
 
-      startDoorSound(); 
+      doorSound.currentTime = 0;
+      doorSound.play().catch(() => {});
     }
 
     function onDrag(e) {
@@ -458,7 +363,8 @@
       if (!isDragging) return;
       isDragging = false;
 
-      stopDoorSound();
+      doorSound.pause();
+      doorSound.currentTime = 0;
 
       if (currentStep === 2 && currentDoorTranslatePercent < 90) {
         let targetPercent = baseTranslatePercent + (currentDoorTranslatePercent - baseTranslatePercent) * 0.4;
@@ -481,15 +387,15 @@
       currentStep = 3;
       isDragging = false;
 
-      stopDoorSound();
+      // Зупинка звуку дверей при завершенні
+      doorSound.pause();
+      doorSound.currentTime = 0;
 
       doorContainer.style.transition = 'transform 0.3s ease-out';
       doorContainer.style.transform = 'translateX(100%)';
 
       doorStroke.classList.remove('stroke-active');
       step2UI.classList.add('hidden');
-
-      //bgVideo.pause();
 
       setTimeout(() => {
         finalCTA.style.display = 'flex';
