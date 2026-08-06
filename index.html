@@ -198,8 +198,8 @@
       width: 100%;
       height: 100%;
       z-index: 6;
-      background: rgba(0, 0, 0, 0); /* Прозорий фон на початку */
-      transition: background 0.6s ease-in-out; /* Плавне затемнення */
+      background: rgba(0, 0, 0, 0); 
+      transition: background 0.6s ease-in-out; 
       flex-direction: column;
       justify-content: center;
       align-items: center;
@@ -211,7 +211,6 @@
       background: rgba(0, 0, 0, 0.65);
     }
 
-    /* Бабл */
     .bubble-img {
       position: absolute;
       width: 38%;
@@ -222,11 +221,17 @@
       pointer-events: none;
       left: 15%;
       top: 50%;
-      z-index: 7;
+      z-index: 6; 
+      transition: filter 0.6s ease-in-out;
+    }
+
+    #final-cta-container.darkened .bubble-img {
+      filter: brightness(0.5);
     }
 
     .bubble-appear {
-      animation: bubblePop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1) forwards;
+      animation: bubblePop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1) forwards, 
+                 bubbleFloat 3s ease-in-out infinite alternate 0.5s;
     }
 
     @keyframes bubblePop {
@@ -240,7 +245,12 @@
       }
     }
 
-    /* Кнопка */
+    @keyframes bubbleFloat {
+      0% { transform: translateY(0px) scale(1) rotate(0deg); }
+      50% { transform: translateY(-8px) scale(1.03) rotate(-1deg); }
+      100% { transform: translateY(4px) scale(0.98) rotate(1deg); }
+    }
+
     .cta-btn-img {
       position: absolute;
       width: 95%;
@@ -260,14 +270,8 @@
     }
 
     @keyframes ctaPop {
-      0% {
-        opacity: 0;
-        transform: scale(0.8);
-      }
-      100% {
-        opacity: 1;
-        transform: scale(1);
-      }
+      0% { opacity: 0; transform: scale(0.8); }
+      100% { opacity: 1; transform: scale(1); }
     }
 
     @keyframes pulseCTA {
@@ -286,9 +290,9 @@
   <audio id="door-sound" src="assets/door_open.mp3" loop preload="auto"></audio>
 
   <div id="game-container">
-    <video id="bg-video" class="bg-video" loop playsinline preload="metadata">
-      <source src="assets/video.webm#t=0.1" type="video/webm">
-      <source src="assets/video.mp4#t=0.1" type="video/mp4">
+    <video id="bg-video" class="bg-video" loop playsinline webkit-playsinline muted preload="auto">
+      <source src="assets/video.mp4" type="video/mp4">
+      <source src="assets/video.webm" type="video/webm">
     </video>
 
     <div class="overlay-dark"></div>
@@ -338,13 +342,12 @@
     let currentStep = 1;
     let isDragging = false;
     let startX = 0;
-    let baseTranslatePercent = 30; // Старт 3/4
+    let baseTranslatePercent = 30; 
     let currentDoorTranslatePercent = 30;
     let containerWidth = gameContainer.clientWidth;
 
     bgVideo.pause();
 
-    // Розігрів та розблокування аудіо на iOS через єдиний жест
     function warmUpAudio() {
       doorSound.muted = false;
       doorSound.play().then(() => {
@@ -360,7 +363,12 @@
       if (currentStep !== 1) return;
       currentStep = 2;
 
-      bgVideo.play().catch(() => {});
+      bgVideo.muted = true;
+      bgVideo.load();
+      bgVideo.play().catch((err) => {
+        console.warn('Video playback failed:', err);
+      });
+
       warmUpAudio();
 
       step1UI.classList.add('hidden');
@@ -442,7 +450,6 @@
       }
     }
 
-    // Фінал
     function completeDoorOpening() {
       currentStep = 3;
       isDragging = false;
@@ -464,7 +471,7 @@
         setTimeout(() => {
           finalCTA.classList.add('darkened');
           ctaBtn.classList.add('cta-appear');
-        }, 700);
+        }, 500);
 
       }, 300);
     }
