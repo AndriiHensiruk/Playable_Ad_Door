@@ -224,9 +224,6 @@
 </head>
 <body>
 
-  <audio id="bg-music" src="assets/bg_music.mp3" loop></audio>
-  <audio id="door-sound" src="assets/door_open.mp3" loop></audio>
-
   <div id="game-container">
     <video id="bg-video" class="bg-video" loop playsinline preload="metadata">
       <source src="assets/video.webm#t=0.1" type="video/webm">
@@ -272,9 +269,6 @@
     const gameContainer = document.getElementById('game-container');
     const bgVideo = document.getElementById('bg-video');
 
-    const bgMusic = document.getElementById('bg-music');
-    const doorSound = document.getElementById('door-sound');
-
     let currentStep = 1;
     let isDragging = false;
     let startX = 0;
@@ -282,33 +276,87 @@
     let currentDoorTranslatePercent = 30;
     let containerWidth = gameContainer.clientWidth;
 
-    let doorSoundStarted = false; // чи вже реально запущений .play() для door-sound
-
     bgVideo.pause();
 
-    // ВАЖЛИВО для iOS/WKWebView: .pause() на одному audio-елементі може
-    // деактивувати спільну AVAudioSession і "заглушити" всі інші медіа
-    // на сторінці (в т.ч. bg-music), навіть якщо ви їх не чіпали.
-    // Тому door-sound НЕ ставимо на паузу — просто глушимо гучність,
-    // а сам елемент продовжує грати (loop) у фоні без звуку.
-    function stopDoorSound() {
-      doorSound.volume = 0;
+    
+    let audioCtx;
+    let masterGain, bgMusicGain, doorSoundGain;
+    let bgMusicBuffer, doorSoundBuffer;
+    let bgMusicSource = null;
+    let doorSoundSource = null;
+
+    function initAudio() {
+      try {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      } catch (e) {
+        return; 
+      }
+
+      masterGain = audioCtx.createGain();
+      masterGain.connect(audioCtx.destination);
+
+      bgMusicGain = audioCtx.createGain();
+      bgMusicGain.gain.value = 1;
+      bgMusicGain.connect(masterGain);
+
+      doorSoundGain = audioCtx.createGain();
+      doorSoundGain.gain.value = 0;
+      doorSoundGain.connect(masterGain);
+
+      loadSound('assets/bg_music.mp3').then(buf => { bgMusicBuffer = buf; });
+      loadSound('assets/door_open.mp3').then(buf => { doorSoundBuffer = buf; });
+    }
+
+    function loadSound(url) {
+      return fetch(url)
+        .then(res => res.arrayBuffer())
+        .then(data => audioCtx.decodeAudioData(data))
+        .catch(() => null);
+    }
+
+    function unlockAudio() {
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume().catch(() => {});
+      }
+    }
+
+    function playBgMusic() {
+      if (!audioCtx || !bgMusicBuffer || bgMusicSource) return;
+      bgMusicSource = audioCtx.createBufferSource();
+      bgMusicSource.buffer = bgMusicBuffer;
+      bgMusicSource.loop = true;
+      bgMusicSource.connect(bgMusicGain);
+      bgMusicSource.start(0);
     }
 
     function startDoorSound() {
-      doorSound.volume = 1;
-      if (!doorSoundStarted) {
-        doorSoundStarted = true;
-        doorSound.play().catch(() => {});
+      if (!audioCtx) return;
+      unlockAudio();
+      if (!doorSoundSource && doorSoundBuffer) {
+        doorSoundSource = audioCtx.createBufferSource();
+        doorSoundSource.buffer = doorSoundBuffer;
+        doorSoundSource.loop = true;
+        doorSoundSource.connect(doorSoundGain);
+        doorSoundSource.start(0);
       }
+      doorSoundGain.gain.setTargetAtTime(1, audioCtx.currentTime, 0.01);
     }
+
+    function stopDoorSound() {
+      if (!audioCtx) return;
+      doorSoundGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.03);
+    }
+
+   
+    initAudio();
 
     step1UI.addEventListener('click', () => {
       if (currentStep !== 1) return;
       currentStep = 2;
 
       bgVideo.play().catch(() => {});
-      bgMusic.play().catch(() => {});
+      unlockAudio();
+      playBgMusic();
 
       step1UI.classList.add('hidden');
       step2UI.style.display = 'flex';
@@ -343,7 +391,7 @@
       handIcon.classList.add('fade-out');
       openDoorText.classList.add('fade-out');
 
-      startDoorSound();
+      startDoorSound(); 
     }
 
     function onDrag(e) {
