@@ -259,7 +259,6 @@
 
   <div id="game-container">
     <video id="bg-video" class="bg-video" loop playsinline webkit-playsinline muted preload="auto">
-      <source src="assets/video.mp4" type="video/mp4">
       <source src="assets/video.webm" type="video/webm">
     </video>
 
@@ -326,7 +325,6 @@
         doorSound.volume = 0.1;
       }
       
-      /* Розгрів коротких ефектів */
       sfxList.forEach(audio => {
         if (!audio) return;
         audio.muted = false;
