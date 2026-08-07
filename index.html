@@ -207,39 +207,6 @@
       background: rgba(0, 0, 0, 0.45);
     }
 
-    /*  бабл  */
-    .bubble-img {
-      position: absolute;
-      width: 44%;
-      max-width: 190px;
-      height: auto;
-      opacity: 0;
-      pointer-events: none;
-      left: 8%;
-      top: 50%;
-      z-index: 9; 
-      transition: filter 0.6s ease-in-out;
-    }
-
-    #final-cta-container.darkened .bubble-img {
-      filter: brightness(0.7);
-    }
-
-    .bubble-appear {
-      animation: bubblePop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1) forwards;
-    }
-
-    @keyframes bubblePop {
-      0% {
-        opacity: 0;
-        transform: scale(0.3) translateY(20px);
-      }
-      100% {
-        opacity: 1;
-        transform: scale(1) translateY(0);
-      }
-    }
-
     /* Кнопка CTA */
     .cta-btn-img {
       position: absolute;
@@ -282,8 +249,13 @@
 </head>
 <body>
 
+  <!-- Аудіо файли -->
   <audio id="bg-music" src="assets/bg_music.mp3" loop preload="auto"></audio>
   <audio id="door-sound" src="assets/door_open.mp3" loop preload="auto"></audio>
+  
+  <audio id="start-voice-sound" src="assets/start_voice.mp3" preload="auto"></audio>
+  <audio id="near-end-voice-sound" src="assets/near_end_voice.mp3" preload="auto"></audio>
+  <audio id="final-voice-sound" src="assets/final_voice.mp3" preload="auto"></audio>
 
   <div id="game-container">
     <video id="bg-video" class="bg-video" loop playsinline webkit-playsinline muted preload="auto">
@@ -312,7 +284,6 @@
     </div>
 
     <div id="final-cta-container">
-      <img id="bubble-img" src="assets/bubble.png" alt="Bubble" class="bubble-img">
       <img id="cta-btn" src="assets/cta_button.png" alt="Play Now" class="cta-btn-img">
     </div>
   </div>
@@ -324,7 +295,6 @@
     const handIcon = document.getElementById('hand-icon');
     
     const finalCTA = document.getElementById('final-cta-container');
-    const bubbleImg = document.getElementById('bubble-img');
     const ctaBtn = document.getElementById('cta-btn');
     
     const doorContainer = document.getElementById('door-container');
@@ -334,6 +304,10 @@
 
     const bgMusic = document.getElementById('bg-music');
     const doorSound = document.getElementById('door-sound');
+    
+    const startVoiceSound = document.getElementById('start-voice-sound');
+    const nearEndVoiceSound = document.getElementById('near-end-voice-sound');
+    const finalVoiceSound = document.getElementById('final-voice-sound');
 
     let currentStep = 1;
     let isDragging = false;
@@ -341,18 +315,37 @@
     let baseTranslatePercent = 30; 
     let currentDoorTranslatePercent = 30;
     let containerWidth = gameContainer.clientWidth;
+    let hasPlayedNearEndSound = false;
 
     bgVideo.pause();
 
     function warmUpAudio() {
-      doorSound.muted = false;
-      doorSound.play().then(() => {
-        doorSound.pause();
-        doorSound.currentTime = 0;
-      }).catch(() => {});
+      const sfxList = [doorSound, startVoiceSound, nearEndVoiceSound, finalVoiceSound];
 
-      bgMusic.muted = false;
-      bgMusic.play().catch(() => {});
+      if (doorSound) {
+        doorSound.volume = 0.1;
+      }
+      
+      /* Розгрів коротких ефектів */
+      sfxList.forEach(audio => {
+        if (!audio) return;
+        audio.muted = false;
+        audio.play().then(() => {
+          audio.pause();
+          audio.currentTime = 0;
+        }).catch(() => {});
+      });
+
+      /* Запуск фонової музики */
+      if (bgMusic) {
+
+        bgMusic.volume = 0.1; 
+        
+        bgMusic.muted = false;
+        bgMusic.play().catch((err) => {
+          console.warn('BG Music playback failed:', err);
+        });
+      }
     }
 
     step1UI.addEventListener('click', () => {
@@ -366,6 +359,10 @@
       });
 
       warmUpAudio();
+
+      /* Звук вигуку при старті */
+      startVoiceSound.currentTime = 0;
+      startVoiceSound.play().catch(() => {});
 
       step1UI.classList.add('hidden');
       step2UI.style.display = 'flex';
@@ -418,6 +415,12 @@
       currentDoorTranslatePercent = newPercent;
       doorContainer.style.transform = `translateX(${newPercent}%)`;
 
+      if (newPercent >= 65 && !hasPlayedNearEndSound) {
+        hasPlayedNearEndSound = true;
+        nearEndVoiceSound.currentTime = 0;
+        nearEndVoiceSound.play().catch(() => {});
+      }
+
       if (newPercent >= 90) {
         completeDoorOpening();
       }
@@ -459,15 +462,16 @@
       doorStroke.classList.remove('stroke-active');
       step2UI.classList.add('hidden');
 
+      finalVoiceSound.currentTime = 0;
+      finalVoiceSound.play().catch(() => {});
+
       setTimeout(() => {
         finalCTA.style.display = 'block';
-        
-        bubbleImg.classList.add('bubble-appear');
 
         setTimeout(() => {
           finalCTA.classList.add('darkened');
           ctaBtn.classList.add('cta-appear');
-        }, 600);
+        }, 300);
 
       }, 300);
     }
